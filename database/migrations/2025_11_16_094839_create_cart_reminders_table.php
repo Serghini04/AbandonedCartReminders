@@ -12,6 +12,7 @@ return new class extends Migration
         {
             $table->id();
             $table->foreignId('cart_id')->constrained()->onDelete('cascade');
+            $table->string('job_id')->nullable();
             $table->integer('reminder_number');
             $table->timestamp('scheduled_at');
             $table->timestamp('sent_at')->nullable();
