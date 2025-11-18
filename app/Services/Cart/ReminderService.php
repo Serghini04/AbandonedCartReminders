@@ -5,7 +5,6 @@ namespace App\Services\Cart;
 use App\Models\Cart;
 use App\Models\CartReminder;
 use App\Jobs\SendCartReminderEmail;
-use Carbon\Carbon;
 
 class ReminderService
 {
@@ -18,8 +17,8 @@ class ReminderService
         $intervals = config('cart.reminder_intervals');
         $baseTime = now();
         
-        foreach ($intervals as $reminderNumber => $minutes) {
-            $scheduledAt = $baseTime->copy()->addMinutes((int) $minutes);
+        foreach ($intervals as $reminderNumber => $hours) {
+            $scheduledAt = $baseTime->copy()->addHours((int) $hours);
             
             $reminder = CartReminder::updateOrCreate(
                 [
@@ -32,7 +31,6 @@ class ReminderService
                 ]
             );
             
-            // Dispatch job with delay
             SendCartReminderEmail::dispatch($reminder)
                 ->delay($scheduledAt);
         }
@@ -43,27 +41,5 @@ class ReminderService
         $cart->reminders()
             ->where('status', 'pending')
             ->update(['status' => 'cancelled']);
-    }
-
-    public function processDueReminders(): int
-    {
-        $dueReminders = CartReminder::where('status', 'pending')
-            ->where('scheduled_at', '<=', now())
-            ->with('cart')
-            ->get();
-        
-        $processed = 0;
-        
-        foreach ($dueReminders as $reminder) {
-            if ($reminder->cart->isFinalized()) {
-                $reminder->cancel();
-                continue;
-            }
-            
-            // SendCartReminderEmail::dispatch($reminder);
-            $processed++;
-        }
-        
-        return $processed;
     }
 }

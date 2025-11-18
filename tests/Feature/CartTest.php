@@ -421,17 +421,17 @@ class CartTest extends TestCase
         $baseTime = $reminders[0]->created_at;
 
         $this->assertEquals(
-            $baseTime->copy()->addMinutes($interval1)->format('Y-m-d H:i'),
+            $baseTime->copy()->addHours($interval1)->format('Y-m-d H:i'),
             $reminders[0]->scheduled_at->format('Y-m-d H:i')
         );
 
         $this->assertEquals(
-            $baseTime->copy()->addMinutes($interval2)->format('Y-m-d H:i'),
+            $baseTime->copy()->addHours($interval2)->format('Y-m-d H:i'),
             $reminders[1]->scheduled_at->format('Y-m-d H:i')
         );
 
         $this->assertEquals(
-            $baseTime->copy()->addMinutes($interval3)->format('Y-m-d H:i'),
+            $baseTime->copy()->addHours($interval3)->format('Y-m-d H:i'),
             $reminders[2]->scheduled_at->format('Y-m-d H:i')
         );
     }

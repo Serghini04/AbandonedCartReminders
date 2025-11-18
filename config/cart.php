@@ -1,11 +1,11 @@
 <?php
 
 return [
-    // Reminder intervals in minutes (for easy testing)
+    // Reminder intervals in hours
     'reminder_intervals' => [
-        1 => env('CART_REMINDER_1_MINUTES', 2),
-        2 => env('CART_REMINDER_2_MINUTES', 5),
-        3 => env('CART_REMINDER_3_MINUTES', 10),
+        1 => env('CART_REMINDER_1_HOURS', 1),
+        2 => env('CART_REMINDER_2_HOURS', 6),
+        3 => env('CART_REMINDER_3_HOURS', 24),
     ],
     
     'reminder_enabled' => env('CART_REMINDERS_ENABLED', true),
