@@ -28,10 +28,10 @@ class CartReminderMail extends Mailable
             return $item->quantity * $item->price;
         });
         
-        $completionUrl = route('cart.complete', [
-            'cart' => $this->cart->id,
-            'token' => $this->generateToken()
-        ]);
+        $completionUrl = url('/api/cart/' 
+            . $this->cart->id 
+            . '/complete?token=' 
+            . $this->generateToken());
         
         return $this->subject($this->getSubject())
             ->view('emails.cart-reminder')

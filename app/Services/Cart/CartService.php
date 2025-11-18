@@ -43,13 +43,18 @@ class CartService
     
     private function getOrCreateActiveCart(string $customerEmail): Cart
     {
-        return Cart::firstOrCreate(
-            [
+        $cart = Cart::where('customer_email', $customerEmail)
+            ->where('status', 'active')
+            ->first();
+        
+        if (!$cart) {
+            $cart = Cart::create([
                 'customer_email' => $customerEmail,
                 'status' => 'active'
-            ],
-            ['customer_email' => $customerEmail]
-        );
+            ]);
+        }
+        
+        return $cart;
     }
     
     public function finalizeCart(int $cartId): Cart

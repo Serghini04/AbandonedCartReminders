@@ -6,6 +6,3 @@ use App\Http\Controllers\CartController;
 Route::get('/', function () {
     return view('welcome');
 });
-
-Route::get('/cart/{cart}/complete', [CartController::class, 'completeFromEmail'])
-    ->name('cart.complete');

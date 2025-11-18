@@ -18,7 +18,7 @@ class ReminderService
         $baseTime = now();
         
         foreach ($intervals as $reminderNumber => $hours) {
-            $scheduledAt = $baseTime->copy()->addHours((int) $hours);
+            $scheduledAt = $baseTime->copy()->addHour((int) $hours);
             
             $reminder = CartReminder::updateOrCreate(
                 [

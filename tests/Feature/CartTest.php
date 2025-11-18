@@ -239,7 +239,7 @@ class CartTest extends TestCase
         $cart = Cart::where('customer_email', 'test@example.com')->first();
         $token = hash_hmac('sha256', $cart->id, config('app.key'));
 
-        $response = $this->getJson("/cart/{$cart->id}/complete?token={$token}");
+        $response = $this->getJson("/api/cart/{$cart->id}/complete?token={$token}");
 
         $response->assertStatus(200)
             ->assertJson([
@@ -264,7 +264,7 @@ class CartTest extends TestCase
         $cart = Cart::where('customer_email', 'test@example.com')->first();
         $invalidToken = 'invalid_token_123';
 
-        $response = $this->getJson("/cart/{$cart->id}/complete?token={$invalidToken}");
+        $response = $this->getJson("/api/cart/{$cart->id}/complete?token={$invalidToken}");
 
         $response->assertStatus(403)
             ->assertJson([

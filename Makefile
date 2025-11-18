@@ -42,7 +42,7 @@ nginx-config:
 
 	@echo "Fixing Laravel permissions..."
 	@sudo chmod -R 775 storage bootstrap/cache
-	@sudo chown -R www-data:www-data storage bootstrap/cache
+	@sudo chown -R serghini:www-data storage bootstrap/cache
 
 	@echo "Testing Nginx configuration..."
 	@sudo nginx -t && echo "✓ Nginx config OK"
