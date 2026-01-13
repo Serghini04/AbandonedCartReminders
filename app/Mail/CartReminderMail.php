@@ -11,8 +11,6 @@ use App\Models\CartReminder;
 class CartReminderMail extends Mailable
 {
     use Queueable, SerializesModels;
-
-    use Queueable, SerializesModels;
     
     public function __construct(
         public Cart $cart,
