@@ -224,7 +224,7 @@ class CartTest extends TestCase
         $response->assertStatus(500)
             ->assertJson([
                 'success' => false,
-                'message' => 'Failed to finalize cart'
+                'message' => 'Failed to finalize cart. Please try again later.'
             ]);
     }
 
@@ -351,7 +351,8 @@ class CartTest extends TestCase
         Queue::assertPushed(SendCartReminderEmail::class, 3);
 
         Queue::assertPushed(SendCartReminderEmail::class, function ($job) use ($cart) {
-            return $job->reminder->cart_id === $cart->id;
+            $reminder = \App\Models\CartReminder::find($job->reminderId);
+            return $reminder && $reminder->cart_id === $cart->id;
         });
     }
 

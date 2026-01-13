@@ -5,9 +5,14 @@ namespace App\Services\Cart;
 use App\Models\Cart;
 use App\Models\CartReminder;
 use App\Jobs\SendCartReminderEmail;
+use App\Repositories\CartReminderRepository;
 
 class ReminderService
 {
+    public function __construct(
+        private CartReminderRepository $cartReminderRepository
+    ) {}
+    
     public function scheduleReminders(Cart $cart): void
     {
         if (!config('cart.reminder_enabled')) {
@@ -20,7 +25,7 @@ class ReminderService
         foreach ($intervals as $reminderNumber => $hours) {
             $scheduledAt = $baseTime->copy()->addHour((int) $hours);
             
-            $reminder = CartReminder::updateOrCreate(
+            $reminder = $this->cartReminderRepository->updateOrCreate(
                 [
                     'cart_id' => $cart->id,
                     'reminder_number' => $reminderNumber,
@@ -31,15 +36,13 @@ class ReminderService
                 ]
             );
             
-            SendCartReminderEmail::dispatch($reminder)
+            SendCartReminderEmail::dispatch($reminder->id)
                 ->delay($scheduledAt);
         }
     }
     
     public function cancelPendingReminders(Cart $cart): void
     {
-        $cart->reminders()
-            ->where('status', 'pending')
-            ->update(['status' => 'cancelled']);
+        $this->cartReminderRepository->cancelPendingForCart($cart);
     }
 }

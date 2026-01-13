@@ -1,10 +1,13 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Http\Requests\AddProductToCartRequest;
+use App\Http\Requests\GetCartRequest;
 use App\Services\Cart\CartService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
+use Symfony\Component\HttpFoundation\Response;
 
 class CartController extends Controller
 {
@@ -12,21 +15,8 @@ class CartController extends Controller
         private CartService $cartService
     ) {}
     
-    public function addProduct(Request $request): JsonResponse
+    public function addProduct(AddProductToCartRequest $request): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'customer_email' => 'required|email',
-            'product_id' => 'required|integer|exists:products,id',
-            'quantity' => 'integer|min:1'
-        ]);
-        
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
-        }
-        
         try {
             $cartItem = $this->cartService->addProduct(
                 $request->customer_email,
@@ -41,37 +31,33 @@ class CartController extends Controller
                     'cart_id' => $cartItem->cart_id,
                     'cart_item' => $cartItem->load('product')
                 ]
-            ], 201);
+            ], Response::HTTP_CREATED);
             
         } catch (\Exception $e) {
+            Log::error('Failed to add product to cart', [
+                'customer_email' => $request->customer_email,
+                'product_id' => $request->product_id,
+                'quantity' => $request->quantity ?? 1,
+                'error_message' => $e->getMessage(),
+                'error_trace' => $e->getTraceAsString()
+            ]);
+            
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to add product to cart',
-                'error' => $e->getMessage()
-            ], 500);
+                'message' => 'Failed to add product to cart. Please try again later.'
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
     
-    public function getCart(Request $request): JsonResponse
+    public function getCart(GetCartRequest $request): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'customer_email' => 'required|email'
-        ]);
-        
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
-        }
-        
         $cart = $this->cartService->getActiveCart($request->customer_email);
         
         if (!$cart) {
             return response()->json([
                 'success' => false,
                 'message' => 'No active cart found'
-            ], 404);
+            ], Response::HTTP_NOT_FOUND);
         }
         
         return response()->json([
@@ -80,7 +66,7 @@ class CartController extends Controller
         ]);
     }
     
-    public function finalizeCart(Request $request, int $cartId): JsonResponse
+    public function finalizeCart(int $cartId): JsonResponse
     {
         try {
             $cart = $this->cartService->finalizeCart($cartId);
@@ -92,11 +78,16 @@ class CartController extends Controller
             ]);
             
         } catch (\Exception $e) {
+            Log::error('Failed to finalize cart', [
+                'cart_id' => $cartId,
+                'error_message' => $e->getMessage(),
+                'error_trace' => $e->getTraceAsString()
+            ]);
+            
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to finalize cart',
-                'error' => $e->getMessage()
-            ], 500);
+                'message' => 'Failed to finalize cart. Please try again later.'
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
     
@@ -108,9 +99,9 @@ class CartController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid token'
-            ], 403);
+            ], Response::HTTP_FORBIDDEN);
         }
         
-        return $this->finalizeCart($request, $cartId);
+        return $this->finalizeCart($cartId);
     }
 }

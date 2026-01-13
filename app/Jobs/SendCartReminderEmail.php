@@ -2,8 +2,9 @@
 
 namespace App\Jobs;
 
-use App\Models\CartReminder;
 use App\Mail\CartReminderMail;
+use App\Repositories\CartRepository;
+use App\Repositories\CartReminderRepository;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -20,49 +21,84 @@ class SendCartReminderEmail implements ShouldQueue
     public $backoff = [60, 300, 900];
     
     public function __construct(
-        public CartReminder $reminder
+        public int $reminderId
     ) {}
     
-    public function handle(): void
-    {
-        $this->reminder->refresh();
+    public function handle(
+        CartReminderRepository $cartReminderRepository,
+        CartRepository $cartRepository
+    ): void {
+        $reminder = $cartReminderRepository->find($this->reminderId);
         
-        if ($this->reminder->status !== 'pending') {
-            Log::info('Reminder already processed', [
-                'reminder_id' => $this->reminder->id,
-                'status' => $this->reminder->status
+        if (!$reminder) {
+            Log::warning('Reminder not found', [
+                'reminder_id' => $this->reminderId
             ]);
             return;
         }
         
-        $cart = $this->reminder->cart()->with('items.product')->first();
+        if ($reminder->status !== 'pending') {
+            Log::info('Reminder already processed', [
+                'reminder_id' => $reminder->id,
+                'status' => $reminder->status
+            ]);
+            return;
+        }
+        
+        $cart = $cartRepository->getWithItemsAndProducts($reminder->cart_id);
+        
+        if (!$cart) {
+            Log::warning('Cart not found for reminder', [
+                'reminder_id' => $reminder->id,
+                'cart_id' => $reminder->cart_id
+            ]);
+            return;
+        }
         
         if ($cart->isFinalized()) {
-            $this->reminder->cancel();
+            $reminder->cancel();
             Log::info('Cart finalized, cancelling reminder', [
                 'cart_id' => $cart->id,
-                'reminder_id' => $this->reminder->id
+                'reminder_id' => $reminder->id
             ]);
             return;
         }
         
         Mail::to($cart->customer_email)
-            ->send(new CartReminderMail($cart, $this->reminder));
+            ->send(new CartReminderMail($cart, $reminder));
         
-        $this->reminder->markAsSent();
+        $reminder->markAsSent();
         
         Log::info('Cart reminder sent', [
             'cart_id' => $cart->id,
-            'reminder_number' => $this->reminder->reminder_number,
+            'reminder_number' => $reminder->reminder_number,
             'customer_email' => $cart->customer_email
         ]);
     }
     
-    public function failed(\Throwable $exception): void
-    {
+    public function failed(
+        \Throwable $exception,
+        CartReminderRepository $cartReminderRepository
+    ): void {
+        $reminder = $cartReminderRepository->find($this->reminderId);
+        
+        if (!$reminder) {
+            Log::error('Failed to send cart reminder - reminder not found', [
+                'reminder_id' => $this->reminderId,
+                'error_message' => $exception->getMessage(),
+                'error_trace' => $exception->getTraceAsString()
+            ]);
+            return;
+        }
+        
         Log::error('Failed to send cart reminder', [
-            'reminder_id' => $this->reminder->id,
-            'error' => $exception->getMessage()
+            'reminder_id' => $reminder->id,
+            'cart_id' => $reminder->cart_id,
+            'reminder_number' => $reminder->reminder_number,
+            'error_message' => $exception->getMessage(),
+            'error_trace' => $exception->getTraceAsString()
         ]);
+        
+        $reminder->markAsFailed();
     }
 }
