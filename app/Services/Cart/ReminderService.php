@@ -3,7 +3,6 @@
 namespace App\Services\Cart;
 
 use App\Models\Cart;
-use App\Models\CartReminder;
 use App\Jobs\SendCartReminderEmail;
 use App\Repositories\CartReminderRepository;
 

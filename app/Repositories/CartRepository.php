@@ -3,7 +3,6 @@
 namespace App\Repositories;
 
 use App\Models\Cart;
-use Illuminate\Database\Eloquent\Collection;
 
 class CartRepository
 {
